@@ -46,6 +46,7 @@ import org.springframework.web.client.RestTemplate;
 @ConditionalOnClass(RestTemplate.class)
 @ConditionalOnBean(LoadBalancerClient.class)
 @EnableConfigurationProperties(LoadBalancerRetryProperties.class)
+// ILoadBalancer自动装载
 public class LoadBalancerAutoConfiguration {
 
 	@LoadBalanced
@@ -61,6 +62,7 @@ public class LoadBalancerAutoConfiguration {
 		return () -> restTemplateCustomizers.ifAvailable(customizers -> {
 			for (RestTemplate restTemplate : LoadBalancerAutoConfiguration.this.restTemplates) {
 				for (RestTemplateCustomizer customizer : customizers) {
+					// 添加拦截器
 					customizer.customize(restTemplate);
 				}
 			}
@@ -82,6 +84,7 @@ public class LoadBalancerAutoConfiguration {
 		public LoadBalancerInterceptor ribbonInterceptor(
 				LoadBalancerClient loadBalancerClient,
 				LoadBalancerRequestFactory requestFactory) {
+			// 通过loadBalancerClient 构造拦截器，并插入restTemplate拦截器中，实现替换工作
 			return new LoadBalancerInterceptor(loadBalancerClient, requestFactory);
 		}
 
@@ -93,6 +96,7 @@ public class LoadBalancerAutoConfiguration {
 				List<ClientHttpRequestInterceptor> list = new ArrayList<>(
 						restTemplate.getInterceptors());
 				list.add(loadBalancerInterceptor);
+				// 设置拦截器
 				restTemplate.setInterceptors(list);
 			};
 		}
@@ -124,6 +128,7 @@ public class LoadBalancerAutoConfiguration {
 
 		@Bean
 		@ConditionalOnMissingBean
+		// 拦截器对象
 		public RetryLoadBalancerInterceptor ribbonInterceptor(
 				LoadBalancerClient loadBalancerClient,
 				LoadBalancerRetryProperties properties,
